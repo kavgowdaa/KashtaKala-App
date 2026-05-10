@@ -347,6 +347,9 @@ fun HomeScreen() {
     var selectedBottom by remember {
         mutableStateOf("Home")
     }
+    var selectedFurniture by remember {
+        mutableStateOf<FurnitureItem?>(null)
+    }
 
     var searchText by remember {
         mutableStateOf("")
@@ -641,6 +644,8 @@ fun HomeScreen() {
                     selected = false,
                     onClick = {
 
+                        selectedBottom = "Home"
+
                         scope.launch {
                             drawerState.close()
                         }
@@ -676,9 +681,26 @@ fun HomeScreen() {
                                 contentDescription = "Menu"
                             )
                         }
+                    },
+
+                    actions = {
+
+                        IconButton(
+                            onClick = {
+                                selectedBottom = "AI"
+                            }
+                        ) {
+
+                            Icon(
+                                imageVector = Icons.Default.SmartToy,
+                                contentDescription = "AI Assistant",
+                                tint = Color(0xFF6D4C41)
+                            )
+                        }
                     }
                 )
             },
+
 
             containerColor = Color.White,
 
@@ -796,9 +818,12 @@ fun HomeScreen() {
                         )
 
                         favoriteItems.forEach { item ->
-
                             FurnitureCard(
                                 item = item,
+                                onCardClick = {
+                                    selectedFurniture = item
+                                    selectedBottom = "Details"
+                                },
                                 isFavorite = true,
                                 isCartAdded = cartItems.contains(item),
 
@@ -807,16 +832,16 @@ fun HomeScreen() {
                                 },
 
                                 onCartClick = {
-                                    if (!cartItems.contains(item)) {
-                                        cartItems.add(item)
-                                    }
+                                    cartItems.remove(item)
                                 },
 
                                 onInvoiceGenerated = {
                                     if (!savedInvoices.contains(it)) {
                                         savedInvoices.add(it)
                                     }
-                                }
+                                },
+
+
                             )
 
                             Spacer(modifier = Modifier.height(18.dp))
@@ -848,13 +873,17 @@ fun HomeScreen() {
                                     }
                                 },
 
-                                onCartClick = {},
+                                onCartClick = {
+                                    cartItems.remove(item)
+                                },
 
                                 onInvoiceGenerated = {
                                     if (!savedInvoices.contains(it)) {
                                         savedInvoices.add(it)
                                     }
-                                }
+                                },
+
+                                onCardClick = { }
                             )
 
                             Spacer(modifier = Modifier.height(18.dp))
@@ -891,6 +920,22 @@ fun HomeScreen() {
                             description = "Modern teakwood dining table set",
                             image = R.drawable.table2_img
                         )
+                    }
+                    "Details" -> {
+
+                        selectedFurniture?.let { furniture ->
+
+                            ProductDetailScreen(
+                                item = furniture,
+                                onBack = {
+                                    selectedBottom = "Home"
+                                }
+                            )
+                        }
+                    }
+                    "AI" -> {
+
+                        AIAssistantScreen()
                     }
 
                     "Invoice" -> {
@@ -1188,6 +1233,11 @@ fun HomeScreen() {
                                 if (!savedInvoices.contains(it)) {
                                     savedInvoices.add(it)
                                 }
+                            },
+
+                            onCardClick = {
+                                selectedFurniture = item
+                                selectedBottom = "Details"
                             }
                         )
 
@@ -1206,7 +1256,8 @@ fun FurnitureCard(
     isCartAdded: Boolean,
     onFavoriteClick: () -> Unit,
     onCartClick: () -> Unit,
-    onInvoiceGenerated: (String) -> Unit
+    onInvoiceGenerated: (String) -> Unit,
+    onCardClick: () -> Unit,
 ) {
 
     var visible by remember {
@@ -1269,14 +1320,20 @@ fun FurnitureCard(
                     )
 
                     Spacer(modifier = Modifier.height(6.dp))
-
                     Text(
                         text = item.description,
                         color = Color.Gray
                     )
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Premium Teak Wood",
+                        color = Color(0xFF2E7D32),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
+                    )
 
+                    Spacer(modifier = Modifier.height(10.dp))
                     Text(
                         text = item.price,
                         fontSize = 20.sp,
@@ -1318,14 +1375,12 @@ fun FurnitureCard(
                                     onCartClick()
                                 },
 
-                                enabled = !isCartAdded,
-
                                 shape = RoundedCornerShape(14.dp)
                             ) {
 
                                 Text(
                                     if (isCartAdded)
-                                        "Added"
+                                        "Remove"
                                     else
                                         "Add Cart"
                                 )
@@ -1649,5 +1704,343 @@ fun InvoiceRow(
                 else
                     Color.Black
         )
+    }
+}
+@Composable
+fun ProductDetailScreen(
+    item: FurnitureItem,
+    onBack: () -> Unit
+) {
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White)
+            .verticalScroll(rememberScrollState())
+    ) {
+
+        Box {
+
+            Image(
+                painter = painterResource(id = item.image),
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(320.dp),
+                contentScale = ContentScale.Crop
+            )
+
+            IconButton(
+                onClick = {
+                    onBack()
+                },
+                modifier = Modifier
+                    .padding(16.dp)
+                    .background(
+                        Color.White,
+                        RoundedCornerShape(50.dp)
+                    )
+            ) {
+
+                Icon(
+                    Icons.Default.ArrowBack,
+                    contentDescription = null
+                )
+            }
+        }
+
+        Column(
+            modifier = Modifier.padding(20.dp)
+        ) {
+
+            Text(
+                text = item.title,
+                fontSize = 30.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = item.description,
+                color = Color.Gray,
+                fontSize = 16.sp
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Text(
+                text = item.price,
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF6D4C41)
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Card(
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color(0xFFF5F5F5)
+                )
+            ) {
+
+                Column(
+                    modifier = Modifier.padding(18.dp)
+                ) {
+
+                    Text(
+                        text = "Product Details",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Text("• Premium teak wood")
+                    Text("• Long lasting finish")
+                    Text("• Modern handcrafted design")
+                    Text("• Free delivery available")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(30.dp))
+
+            Button(
+                onClick = { },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(58.dp),
+
+                shape = RoundedCornerShape(18.dp),
+
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF6D4C41)
+                )
+            ) {
+
+                Text(
+                    text = "Buy Now",
+                    fontSize = 18.sp
+                )
+            }
+        }
+    }
+}
+@Composable
+fun AIAssistantScreen() {
+
+    var userMessage by remember {
+        mutableStateOf("")
+    }
+
+    var aiReply by remember {
+        mutableStateOf(
+            "Hello 👋\nI am KashtaKala AI Assistant.\nAsk me about furniture, wood types, interior ideas, or pricing."
+        )
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF8F5F2))
+            .padding(16.dp)
+    ) {
+
+        Text(
+            text = "KashtaKala AI Assistant 🤖",
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF5D4037)
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(22.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = Color.White
+            ),
+            elevation = CardDefaults.cardElevation(6.dp)
+        ) {
+
+            Column(
+                modifier = Modifier.padding(18.dp)
+            ) {
+
+                Text(
+                    text = aiReply,
+                    fontSize = 18.sp,
+                    color = Color.DarkGray
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        OutlinedTextField(
+            value = userMessage,
+            onValueChange = {
+                userMessage = it
+            },
+
+            label = {
+                Text("Ask Something")
+            },
+
+            modifier = Modifier.fillMaxWidth(),
+
+            shape = RoundedCornerShape(18.dp)
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(
+            onClick = {
+
+                aiReply = when {
+
+                    userMessage.contains("wood", true) -> {
+                        "Teak wood is highly recommended for premium furniture because it is durable, water resistant, and long lasting."
+                    }
+
+                    userMessage.contains("bed", true) -> {
+                        "Modern king-size beds with teak wood and storage are trending in 2026."
+                    }
+
+                    userMessage.contains("sofa", true) -> {
+                        "L-shape sofas with beige colors are perfect for modern interiors."
+                    }
+
+                    userMessage.contains("chair", true) -> {
+                        "Ergonomic wooden chairs are highly popular for office setups."
+                    }
+
+                    userMessage.contains("table", true) -> {
+                        "Minimal dining tables with matte finish are trending."
+                    }
+
+                    userMessage.contains("price", true) -> {
+                        "Furniture pricing depends on wood quality, polish, labor cost, and dimensions."
+                    }
+
+                    userMessage.contains("interior", true) -> {
+                        "Modern interiors use warm lighting, wooden textures, and minimal designs."
+                    }
+
+                    else -> {
+                        "Sorry 😅\nI can help with furniture ideas, pricing, wood suggestions, and interiors."
+                    }
+                }
+            },
+
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(55.dp),
+
+            shape = RoundedCornerShape(18.dp),
+
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF6D4C41)
+            )
+        ) {
+
+            Icon(
+                Icons.Default.Send,
+                contentDescription = null
+            )
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Text(
+                text = "Ask AI",
+                fontSize = 18.sp
+            )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Text(
+            text = "Popular Questions",
+            fontWeight = FontWeight.Bold,
+            fontSize = 20.sp
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        AIQuestionCard(
+            question = "Best wood for luxury furniture?"
+        ) {
+            aiReply =
+                "Teak wood is the best choice for luxury furniture because it is durable, premium, and water resistant."
+        }
+
+        AIQuestionCard(
+            question = "Trending sofa designs?"
+        ) {
+            aiReply =
+                "L-shape sofas with beige and wooden finishes are trending in modern interiors."
+        }
+
+        AIQuestionCard(
+            question = "Modern bedroom ideas?"
+        ) {
+            aiReply =
+                "Modern bedrooms use warm lighting, wooden panels, minimal decor, and neutral colors."
+        }
+
+        AIQuestionCard(
+            question = "How is furniture cost calculated?"
+        ) {
+            aiReply =
+                "Furniture cost is calculated using wood material cost, labor charges, polish, GST, and dimensions."
+        }
+    }
+}
+@Composable
+fun AIQuestionCard(
+    question: String,
+    onClick: () -> Unit
+) {
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp)
+            .clickable {
+                onClick()
+            },
+
+        shape = RoundedCornerShape(18.dp),
+
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White
+        ),
+
+        elevation = CardDefaults.cardElevation(4.dp)
+    ) {
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+
+            Icon(
+                Icons.Default.Lightbulb,
+                contentDescription = null,
+                tint = Color(0xFF6D4C41)
+            )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Text(
+                text = question,
+                fontSize = 16.sp
+            )
+        }
     }
 }
